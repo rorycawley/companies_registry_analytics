@@ -1,0 +1,54 @@
+# Version Control
+**/.git
+.gitignore
+
+# Package Managers/Dependencies
+**/node_modules
+
+# Python
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+venv/
+
+# Data/Databases
+*.sqlite3
+
+# Logs
+*.log
+
+# Environment Variables
+.env
+
+# Operating System
+.DS_Store
+
+# Compiled JavaScript/Frontend Files
+**/build
+**/dist
+**/.parcel-cache
+**/.next
+
+# Temporary Files
+*.tmp
+*.swp
+*.bak
+
+# Test Files (if not needed in the container)
+**/tests
+**/test_*.py
+**/*.pytest_cache
+
+# Cache Directories
+**/.mypy_cache
+**/.pytest_cache
+**/.cache
+
+# Data and Assets
+data/transformation
+
+# Other files
+Dockerfile
+requirements.txt
+docker-entrypoint.sh
