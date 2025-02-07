@@ -49,6 +49,3 @@ venv/
 data/transformation
 
 # Other files
-Dockerfile
-requirements.txt
-docker-entrypoint.sh
