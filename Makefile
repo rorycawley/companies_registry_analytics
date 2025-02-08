@@ -3,9 +3,7 @@
 # Default values for environment variables
 SUPERSET_SECRET_KEY ?= $(shell python3 -c "import secrets; print(secrets.token_hex(32))")
 SUPERSET_PORT ?= 8088
-SUPERSET_WORKERS ?= 4
-SUPERSET_TIMEOUT ?= 60
-DUCKDB_DATABASE ?= data/transformations/transformed_data.duckdb
+TRANSFORMED_DATA_DATABASE ?= /app/data/transformations/transformed_data.duckdb
 
 # Environment file inclusion
 ifneq (,$(wildcard .env))
@@ -53,14 +51,8 @@ endif
 		echo "❌ SUPERSET_PORT must be a number between 1024 and 65535"; \
 		exit 1; \
 	fi
-ifndef SUPERSET_WORKERS
-	$(error ❌ SUPERSET_WORKERS is not set. Please set this environment variable.)
-endif
-ifndef SUPERSET_TIMEOUT
-	$(error ❌ SUPERSET_TIMEOUT is not set. Please set this environment variable.)
-endif
-ifndef DUCKDB_DATABASE
-	$(error ❌ DUCKDB_DATABASE is not set. Please set this environment variable.)
+ifndef TRANSFORMED_DATA_DATABASE
+	$(error ❌ TRANSFORMED_DATA_DATABASE is not set. Please set this environment variable.)
 endif
 	@echo "✅ Environment check passed!"
 
