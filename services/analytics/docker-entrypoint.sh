@@ -9,93 +9,105 @@ export FLASK_APP=${FLASK_APP:-"superset"}
 export TRANSFORMED_DATA_DATABASE=${TRANSFORMED_DATA_DATABASE:-"$PYTHONPATH/data/transformations/transformed_data.duckdb"}
 export WAIT_FOR_DUCKDB=${WAIT_FOR_DUCKDB:-"true"}
 
-# === 2. Set Default Admin Credentials (if not provided via environment) ===
-# These default values match your non-Docker setup.
+echo "🔧 Configuring Superset environment"
+echo "   • SUPERSET_HOME: $SUPERSET_HOME"
+echo "   • Configuration: $SUPERSET_CONFIGURATION"
+echo "   • Database: $TRANSFORMED_DATA_DATABASE"
+
+# === 2. Set Default Admin Credentials ===
 ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
 ADMIN_FIRSTNAME=${ADMIN_FIRSTNAME:-Superset}
 ADMIN_LASTNAME=${ADMIN_LASTNAME:-Admin}
 ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
 
-# === 2. Verify Required Environment Variables ===
+echo "👤 Admin configuration verified"
+
+# === 3. Verify Required Environment Variables ===
 if [ -z "$SUPERSET_SECRET_KEY" ]; then
-    echo "Error: SUPERSET_SECRET_KEY environment variable is required."
+    echo "❌ ERROR: Missing SUPERSET_SECRET_KEY environment variable"
     exit 1
 fi
-echo "All required environment variables are set."
+echo "✅ Environment variables verified"
 
-# === 3. Create Required Directories ===
+# === 4. Create Required Directories ===
 mkdir -p "$SUPERSET_HOME"
+echo "📁 Created Superset directory: $SUPERSET_HOME"
 
-# === 4. DuckDB Configuration ===
+# === 5. DuckDB Configuration ===
 if [ "$WAIT_FOR_DUCKDB" = "true" ]; then
-    echo "Waiting for DuckDB file at ${TRANSFORMED_DATA_DATABASE}..."
+    echo "⏳ Checking database availability"
+    echo "   Location: $TRANSFORMED_DATA_DATABASE"
     
     max_wait=300
     waited=0
     while [ ! -f "$TRANSFORMED_DATA_DATABASE" ]; do
         if [ $waited -ge $max_wait ]; then
-            echo "Warning: Transformed data database file not found after ${max_wait} seconds. Continuing startup..."
+            echo "⚠️  Database not found after ${max_wait}s"
+            echo "   Continuing startup process"
             break
         fi
-        echo "Waiting for Transformed data database file... ($waited/${max_wait}s)"
+        echo "   Checking database... (${waited}s/${max_wait}s)"
         sleep 5
         waited=$((waited+5))
     done
     
     if [ -f "$TRANSFORMED_DATA_DATABASE" ]; then
-        echo "Transformed data database file found successfully."
+        echo "✅ Database connection successful"
         export WAIT_FOR_DUCKDB="false"
     fi
 fi
 
-
-
-# === 5. Initialize Superset if Not Already Initialized ===
+# === 6. Initialize Superset ===
 if [ ! -f "$SUPERSET_HOME/superset.db" ]; then
-  echo "Upgrading Superset Metadata DB..."
-  superset db upgrade
+    echo "🔄 Performing first-time initialization"
+    echo "   Upgrading metadata database..."
+    superset db upgrade
 
-  echo "Creating Admin User..."
-  superset fab create-admin \
-    --username "$ADMIN_USERNAME" \
-    --firstname "$ADMIN_FIRSTNAME" \
-    --lastname "$ADMIN_LASTNAME" \
-    --email "$ADMIN_EMAIL" \
-    --password "$ADMIN_PASSWORD"
+    echo "👤 Creating admin account"
+    superset fab create-admin \
+        --username "$ADMIN_USERNAME" \
+        --firstname "$ADMIN_FIRSTNAME" \
+        --lastname "$ADMIN_LASTNAME" \
+        --email "$ADMIN_EMAIL" \
+        --password "$ADMIN_PASSWORD"
 
-  echo "Initializing Superset..."
-  superset init
+    echo "🚀 Initializing Superset"
+    superset init
+    echo "✅ Setup complete"
 fi
 
-# === 7. Import Exported Dashboard (only once) ===
+# === 7. Import Dashboard Configuration ===
 DASHBOARD_MARKER="$SUPERSET_HOME/.dashboard_imported"
 DASHBOARD_FILE="$SUPERSET_CONFIGURATION/exported_dashboard.zip"
 
 if [ ! -f "$DASHBOARD_MARKER" ]; then
+    echo "   No import marker found, checking for dashboard file"
     if [ -f "$DASHBOARD_FILE" ]; then
-        echo "Importing dashboard from $DASHBOARD_FILE..."
+        echo "   Dashboard file found, attempting import"
         if superset import-dashboards -p "$DASHBOARD_FILE" -u "${ADMIN_USERNAME:-admin}"; then
             touch "$DASHBOARD_MARKER"
-            echo "Dashboard import completed successfully."
+            echo "✅ Dashboard import successful"
         else
-            echo "Warning: Dashboard import failed. Please check the logs."
+            echo "⚠️  Dashboard import failed"
+            echo "   Check application logs for details"
         fi
     else
-        echo "No dashboard file found at $DASHBOARD_FILE. Marking check as complete."
+        echo "📊 No dashboard configuration found at:"
+        echo "   $DASHBOARD_FILE"
+        echo "   Creating marker file to skip future checks"
         touch "$DASHBOARD_MARKER"
     fi
+else
+    echo "📊 Dashboard marker exists, skipping import check"
 fi
 
-
-# === 7. Health Check and Port Configuration ===
+# === 8. Display Status Information ===
 PORT=${SUPERSET_PORT:-8088}
-echo "============================================"
-echo "Apache Superset Initialization Complete"
-echo "----------------------------------------"
-echo "Access URL: http://localhost:${PORT}"
-echo "Admin User: ${ADMIN_USERNAME:-admin}"
-echo "============================================"
+echo "✨ Apache Superset is ready"
+echo "🌍 Access: http://localhost:${PORT}"
+echo "👤 User: ${ADMIN_USERNAME}"
+echo "📚 Documentation: https://superset.apache.org/docs/"
 
-# === 10. Execute the provided command (gunicorn) ===
+# === 9. Execute Command ===
 exec "$@"

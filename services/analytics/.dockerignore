@@ -5,6 +5,8 @@
 # Package Managers/Dependencies
 **/node_modules
 
+superset_home/
+
 # Python
 **/__pycache__
 *.pyc

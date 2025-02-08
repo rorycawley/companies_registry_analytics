@@ -83,3 +83,29 @@ The typical development workflow follows these steps:
 8. Clean up resources with `make clean` when needed
 
 Each command includes safeguards to ensure proper configuration and execution.
+
+# Notable Docker commands
+
+```sh
+docker stop companies-registry-analytics-container
+docker rm companies-registry-analytics-container
+docker rmi companies-registry-analytics-image
+
+docker run -d -p 8088:8088 \
+-v /Users/rorycawley/Development/pydev/companies_registry_analytics/services/analytics/superset_home:/app/superset_home \
+-v /Users/rorycawley/Development/pydev/companies_registry_analytics/data/transformations/transformed_data.duckdb:/app/data/transformations/transformed_data.duckdb \
+-v /Users/rorycawley/Development/pydev/companies_registry_analytics/services/analytics/config/:/app/config \
+-e SUPERSET_SECRET_KEY="U5ijkoEeu7iJ5BS0O6J1TaNNULDUuLRH0Vz3Lue4dkvUfjTcPaOfrZqW" \
+--name companies-registry-analytics-container \
+companies-registry-analytics-image
+
+docker logs companies-registry-analytics-container
+
+docker build -t companies-registry-analytics-image .
+
+docker build --no-cache -t companies-registry-analytics-image .
+
+docker exec companies-registry-analytics-container ls -la /app/superset_home/.dashboard_imported
+
+docker exec companies-registry-analytics-container rm /app/superset_home/.dashboard_imported
+```
