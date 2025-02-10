@@ -8,12 +8,25 @@
 #     --name companies-registry-analytics \
 #     companies-registry-analytics-image
 #
-# docker rm -f companies-registry-analytics
+# docker run -d -p 8088:8088 \
+# -e SUPERSET_SECRET_KEY="U5ijkoEeu7iJ5BS0O6J1TaNNULDUuLRH0Vz3Lue4dkvUfjTcPaOfrZqW" \
+# -e PREVENT_UNSAFE_DB_CONNECTIONS=false \
+# -e ENABLE_TEMPLATE_PROCESSING=false \
+# -v $(pwd)/superset_home:/app/superset_home \
+# -v $(pwd)/config:/app/config \
+# -v $(pwd)/../../data/transformations:/app/data/transformations \
+# --name companies-registry-analytics \
+# companies-registry-analytics-image
 # 
+# duckdb:///data/transformations/transformed_data.duckdb
+# 
+# docker rm -f companies-registry-analytics
+# rm -rf superset_home 
 # docker rmi companies-registry-analytics-image  
 #
 # docker logs companies-registry-analytics
 #
+# docker exec -it companies-registry-analytics superset export-dashboards -f /app/superset_home/exported_dashboards.zip  
 # Use python:3.10.12-slim-bullseye for Superset. Debian-based images enable faster installation 
 # of pre-built Python wheels, significantly improving build times compared to Alpine, which 
 # requires compiling from source.
@@ -29,9 +42,10 @@ ENV PYTHONPATH=/app \
     FLASK_APP=superset \
     FLASK_ENV=development \
     SUPERSET_ENV=dev \
+    VERSIONED_EXPORT=true \
     SUPERSET_PORT=8088 \
     SUPERSET_TIMEOUT=300 \
-    SUPERSET_LOAD_EXAMPLES=true \
+    SUPERSET_LOAD_EXAMPLES=false \
     SUPERSET_HOME=/app/superset_home \
     SUPERSET_DASHBOARD=/app/config
 
