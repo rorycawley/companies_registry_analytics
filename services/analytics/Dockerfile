@@ -1,71 +1,100 @@
-# --- Stage 1: Build stage ---
-FROM python:3.10-slim AS builder
+# docker build --no-cache -t companies-registry-analytics-image .
+#
+docker run -d -p 8088:8088 \
+    -e SUPERSET_SECRET_KEY="U5ijkoEeu7iJ5BS0O6J1TaNNULDUuLRH0Vz3Lue4dkvUfjTcPaOfrZqW" \
+    -v $(pwd)/superset_home:/app/superset_home \
+    -v $(pwd)/config:/app/config \
+    -v $(pwd)/../../data/transformations:/app/data/transformations \
+    --name companies-registry-analytics \
+    companies-registry-analytics-image
+#
+# docker rm -f companies-registry-analytics
+#
+# docker logs companies-registry-analytics
+#
+# Use python:3.10.12-slim-bullseye for Superset. Debian-based images enable faster installation 
+# of pre-built Python wheels, significantly improving build times compared to Alpine, which 
+# requires compiling from source.
+FROM python:3.10.12-slim-bullseye
 
-# Install build dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    libffi-dev \
-    libssl-dev \
-    default-libmysqlclient-dev \
-    libpq-dev \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set OpenSSL compilation flags
-ENV LDFLAGS="-L/usr/lib/openssl"
-ENV CFLAGS="-I/usr/include/openssl"
-
-# Create necessary directories
-WORKDIR /app
-
-# Install Python packages
-COPY requirements.txt /app/
-RUN pip install --upgrade pip setuptools && \
-    pip install --no-cache-dir -r /app/requirements.txt && \
-    pip install --no-cache-dir gunicorn
-
-# --- Stage 2: Final runtime image ---
-FROM python:3.10-slim
-
-# Install runtime dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    libffi8 \
-    libssl3 \
-    libpq5 \
-    default-mysql-client \
-    mariadb-client-core \
-    libmariadb3 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy Python environment from builder
-COPY --from=builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
-COPY --from=builder /usr/local/bin/superset /usr/local/bin/
-COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/
-
-# Set up application environment
-WORKDIR /app
-COPY . /app/
-
-# Create required directories and set permissions
-RUN mkdir -p /app/superset_home /app/data/transformations && \
-    adduser --disabled-password --gecos "" superset && \
-    chown -R superset:superset /app && \
-    chmod +x /app/docker-entrypoint.sh
-
-# Set environment variables
-ENV FLASK_APP=superset \
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONLOGGING=INFO \
+    DEBIAN_FRONTEND=noninteractive \
+    VIRTUAL_ENV=/app/venv \
+    PATH="/app/venv/bin:$PATH" \
+    FLASK_APP=superset \
+    FLASK_ENV=development \
+    SUPERSET_ENV=dev \
+    SUPERSET_PORT=8088 \
+    SUPERSET_TIMEOUT=300 \
+    SUPERSET_LOAD_EXAMPLES=true \
     SUPERSET_HOME=/app/superset_home \
-    PYTHONPATH=/app \
-    PATH="/usr/local/bin:$PATH"
+    SUPERSET_DASHBOARD=/app/config
+
+# Create the Superset user and group early with specific UID/GID
+RUN groupadd --system --gid 1001 superset && \
+    useradd --system --uid 1001 --gid superset --shell /bin/bash --create-home superset
+
+# Install system dependencies required for Superset
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    python3-pip \
+    libsasl2-dev \
+    libldap2-dev \
+    default-libmysqlclient-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create and set working directory
+WORKDIR /app
+
+# Copy the requirements.txt into the container
+COPY --chown=superset:superset requirements.txt .
+
+# Set up Python virtual environment and install dependencies
+RUN python -m venv /app/venv && \
+    . /app/venv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install uv==0.5.29 && \
+    uv pip install --system --no-cache -r requirements.txt && \
+    chown -R superset:superset /app/venv
+
+# Create a health check script
+COPY --chown=superset:superset <<-EOF /usr/local/bin/health-check.sh
+    #!/bin/bash
+    if curl -f "http://localhost:8088/health" >/dev/null 2>&1; then
+        exit 0
+    else
+        exit 1
+    fi
+EOF
+
+# Copy entrypoint script and set permissions
+COPY --chown=superset:superset docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/health-check.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Create and set up Superset home directory
+RUN mkdir -p ${SUPERSET_HOME} && \
+    chown -R superset:superset ${SUPERSET_HOME}
+
+# Add security hardening
+RUN chmod -R 755 /usr/local/bin/ && \
+    chmod -R 644 ${SUPERSET_HOME}
 
 # Switch to non-root user
 USER superset
 
-# Expose port
-EXPOSE 8088
+EXPOSE ${SUPERSET_PORT}
 
-# Set entrypoint and default command
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["gunicorn", "--bind", "0.0.0.0:8088", "--workers", "2", "--timeout", "120", "superset.app:create_app()"]
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 CMD [ "/usr/local/bin/health-check.sh" ]
+
+# How to override SUPERSET_SECRET_KEY:
+#   docker run -e SUPERSET_SECRET_KEY="your-secret-key" ...
+ENTRYPOINT ["docker-entrypoint.sh"]
