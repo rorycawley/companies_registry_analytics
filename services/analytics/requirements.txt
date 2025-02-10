@@ -1,4 +1,4 @@
-apache-superset==3.1.2
-duckdb==0.8.1
-duckdb-engine==0.9.2
-pillow==11.1.0
+apache-superset
+duckdb
+duckdb-engine
+pillow

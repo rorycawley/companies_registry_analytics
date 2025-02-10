@@ -1,14 +1,16 @@
 # docker build --no-cache -t companies-registry-analytics-image .
 #
-docker run -d -p 8088:8088 \
-    -e SUPERSET_SECRET_KEY="U5ijkoEeu7iJ5BS0O6J1TaNNULDUuLRH0Vz3Lue4dkvUfjTcPaOfrZqW" \
-    -v $(pwd)/superset_home:/app/superset_home \
-    -v $(pwd)/config:/app/config \
-    -v $(pwd)/../../data/transformations:/app/data/transformations \
-    --name companies-registry-analytics \
-    companies-registry-analytics-image
+# docker run -d -p 8088:8088 \
+#     -e SUPERSET_SECRET_KEY="U5ijkoEeu7iJ5BS0O6J1TaNNULDUuLRH0Vz3Lue4dkvUfjTcPaOfrZqW" \
+#     -v $(pwd)/superset_home:/app/superset_home \
+#     -v $(pwd)/config:/app/config \
+#     -v $(pwd)/../../data/transformations:/app/data/transformations \
+#     --name companies-registry-analytics \
+#     companies-registry-analytics-image
 #
 # docker rm -f companies-registry-analytics
+# 
+# docker rmi companies-registry-analytics-image  
 #
 # docker logs companies-registry-analytics
 #
