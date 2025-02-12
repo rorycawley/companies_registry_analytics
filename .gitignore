@@ -3,7 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.duckdb
-superset_home/
+
+
+# Superset
+services/analytics/superset_home/*
+!services/analytics/superset_home/.gitkeep
 
 # C extensions
 *.so

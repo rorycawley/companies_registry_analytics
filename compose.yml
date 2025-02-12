@@ -1,0 +1,89 @@
+volumes:
+  postgres_data:
+    driver: local
+  companies_registry_db_data:
+    driver: local
+
+networks:
+  postgres_network:
+    driver: bridge
+  superset_network:
+    driver: bridge
+
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: ${PROJECT_NAME:-companies-registry}_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    ports:
+      - "5432:5432"
+    volumes:
+      - companies_registry_db_data:/var/lib/postgresql/data
+      - ./data/synthetic/companies_registry_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /tmp
+    user: postgres
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 512M
+    networks:
+      - postgres_network
+    security_opt:
+      - no-new-privileges:true
+
+  analytics:
+    build:
+      context: ./services/analytics
+      dockerfile: Dockerfile
+      args:
+        SUPERSET_HOME: ${SUPERSET_HOME}
+        SUPERSET_PORT: ${SUPERSET_PORT}
+        SUPERSET_DASHBOARD: ${SUPERSET_DASHBOARD}
+    image: ${PROJECT_NAME:-companies-registry}-analytics-image
+    container_name: ${PROJECT_NAME:-companies-registry}-analytics
+    restart: unless-stopped
+    user: superset
+    environment:
+      FLASK_APP: superset
+      FLASK_ENV: ${FLASK_ENV}
+      SUPERSET_ENV: ${SUPERSET_ENV}
+      SUPERSET_LOAD_EXAMPLES: ${SUPERSET_LOAD_EXAMPLES}
+      SUPERSET_PORT: ${SUPERSET_PORT}
+      SUPERSET_TIMEOUT: ${SUPERSET_TIMEOUT}
+      SUPERSET_HOME: /app/superset_home
+      SUPERSET_DASHBOARD: /app/config
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      PREVENT_UNSAFE_DB_CONNECTIONS: ${PREVENT_UNSAFE_DB_CONNECTIONS}
+      ENABLE_TEMPLATE_PROCESSING: ${ENABLE_TEMPLATE_PROCESSING}
+      ADMIN_USERNAME: ${SUPERSET_ADMIN_USER}
+      ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
+      ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
+      PYTHONPATH: /app
+    volumes:
+      - ./services/analytics/superset_home:${SUPERSET_HOME}:rw
+      - ./services/analytics/config:${SUPERSET_DASHBOARD}:ro
+      - ./data/transformations:/app/data/transformations:rw
+    networks:
+      - superset_network
+    ports:
+      - "${SUPERSET_PORT:-8088}:8088"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${SUPERSET_PORT:-8088}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

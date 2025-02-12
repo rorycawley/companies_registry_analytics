@@ -187,6 +187,17 @@ JOIN dim_location l
     ON c.city = l.city
     AND c.country_code = l.country_code
 GROUP BY l.risk_level;
+
+SELECT
+    l.risk_level,
+    ROUND(AVG(r.composite_risk_score), 2) AS avg_composite_risk
+FROM fact_risk_assessments r
+JOIN dim_company c
+    ON r.company_id = c.company_id
+JOIN dim_location l
+    ON c.city = l.city
+    AND c.country_code = l.country_code
+GROUP BY l.risk_level;
 ```
 
 ## Profit Margin vs. Composite Risk Scatter Plot
