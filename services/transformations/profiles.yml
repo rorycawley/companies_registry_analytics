@@ -1,0 +1,8 @@
+risk_detection_transformations:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DBT_DATAWAREHOUSE_DB') }}"
+      extensions:
+        - parquet

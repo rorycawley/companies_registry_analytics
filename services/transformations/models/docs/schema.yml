@@ -1,0 +1,438 @@
+version: 2
+
+# sources:
+#   - name: source_risk_data
+#     description: '{{ doc("source_risk_data") }}'
+#     tables:
+#       - name: peps
+#         columns:
+#           - name: first_name
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_not_be_null
+#               - dbt_expectations.expect_column_value_lengths_to_be_between:
+#                   min_value: 1
+#                   max_value: 255
+#           - name: last_name
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_not_be_null
+#               - dbt_expectations.expect_column_value_lengths_to_be_between:
+#                   min_value: 1
+#                   max_value: 255
+#           - name: position
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_not_be_null
+#           - name: country
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_not_be_null
+#               - dbt_expectations.expect_column_value_lengths_to_be_between:
+#                   min_value: 2
+#                   max_value: 100
+#         tests:
+#           - dbt_expectations.expect_compound_columns_to_be_unique:
+#               column_list: ['first_name', 'last_name', 'country']
+#           - dbt_expectations.expect_table_columns_to_match_ordered_list:
+#               column_list: ['first_name', 'last_name', 'position', 'country']
+
+#       - name: risky_locations
+#         columns:
+#           - name: city
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_not_be_null
+#               - dbt_expectations.expect_column_value_lengths_to_be_between:
+#                   min_value: 1
+#                   max_value: 100
+#           - name: country
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_not_be_null
+#               - dbt_expectations.expect_column_value_lengths_to_be_between:
+#                   min_value: 2
+#                   max_value: 2
+#           - name: risk_level
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_be_in_set:
+#                   value_set: ['High', 'Medium']
+#                   quote_values: true
+#         tests:
+#           - dbt_expectations.expect_compound_columns_to_be_unique:
+#               column_list: ['city', 'country']
+#           - dbt_expectations.expect_table_columns_to_match_ordered_list:
+#               column_list: ['city', 'country', 'risk_level']
+
+#   - name: source_companies_registry_data
+#     description: '{{ doc("source_companies_registry_data") }}'
+#     database: companies_registry
+#     schema: public
+#     tables:
+#       - name: companies
+#         columns:
+#           - name: company_id
+#             tests:
+#               - unique
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_be_of_type:
+#                   column_type: integer
+#           - name: name
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_not_be_null
+#               - dbt_expectations.expect_column_value_lengths_to_be_between:
+#                   min_value: 1
+#                   max_value: 255
+#           - name: incorporation_date
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_be_of_type:
+#                   column_type: date
+#               - dbt_expectations.expect_column_values_to_be_between:
+#                   min_value: '1800-01-01'
+#                   max_value: '{{ modules.datetime.date.today() }}'
+#           - name: country_code
+#             tests:
+#               - dbt_expectations.expect_column_value_lengths_to_equal:
+#                   value: 2
+
+#       - name: financials
+#         columns:
+#           - name: financial_id
+#             tests:
+#               - unique
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_be_of_type:
+#                   column_type: integer
+#           - name: company_id
+#             tests:
+#               - not_null
+#               - relationships:
+#                   to: source('companies_registry', 'companies')
+#                   field: company_id
+#           - name: report_date
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_be_of_type:
+#                   column_type: date
+#               - dbt_expectations.expect_column_values_to_be_between:
+#                   min_value: '1800-01-01'
+#                   max_value: '{{ modules.datetime.date.today() }}'
+#           - name: revenue
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_be_of_type:
+#                   column_type: numeric
+#           - name: profit
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_be_of_type:
+#                   column_type: numeric
+#         tests:
+#           - dbt_expectations.expect_compound_columns_to_be_unique:
+#               column_list: ['company_id', 'report_date']
+
+#       - name: directors
+#         columns:
+#           - name: director_id
+#             tests:
+#               - unique
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_be_of_type:
+#                   column_type: integer
+#           - name: company_id
+#             tests:
+#               - not_null
+#               - relationships:
+#                   to: source('companies_registry', 'companies')
+#                   field: company_id
+#           - name: first_name
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_value_lengths_to_be_between:
+#                   min_value: 1
+#                   max_value: 255
+#           - name: last_name
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_value_lengths_to_be_between:
+#                   min_value: 1
+#                   max_value: 255
+#           - name: appointment_date
+#             tests:
+#               - not_null
+#               - dbt_expectations.expect_column_values_to_be_of_type:
+#                   column_type: date
+#               - dbt_expectations.expect_column_values_to_be_between:
+#                   min_value: '1800-01-01'
+#                   max_value: '{{ modules.datetime.date.today() }}'
+
+models:
+  - name: stg_companies
+    description: '{{ doc("stg_companies") }}'
+    columns:
+      - name: company_id
+        tests:
+          - unique
+          - not_null
+      - name: company_name
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_value_lengths_to_be_between:
+              min_value: 1
+              max_value: 255
+      - name: incorporation_date
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: DATE '1800-01-01'
+              max_value: DATE '{{ modules.datetime.date.today() }}'
+
+  - name: stg_directors
+    description: '{{ doc("stg_directors") }}'
+    columns:
+      - name: director_id
+        tests:
+          - unique
+          - not_null
+      - name: company_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_companies')
+              field: company_id
+      - name: appointment_date
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: DATE '1800-01-01'
+              max_value: DATE '{{ modules.datetime.date.today() }}'
+
+  - name: stg_financials
+    description: '{{ doc("stg_financials") }}'
+    columns:
+      - name: financial_id
+        tests:
+          - unique
+          - not_null
+      - name: company_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_companies')
+              field: company_id
+      - name: report_date
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: DATE '1800-01-01'
+              max_value: DATE '{{ modules.datetime.date.today() }}'
+    tests:
+      - dbt_expectations.expect_compound_columns_to_be_unique:
+          column_list: ['company_id', 'report_date']
+
+  - name: stg_peps
+    description: '{{ doc("stg_peps") }}'
+    columns:
+      - name: first_name
+        tests:
+          - not_null
+      - name: last_name
+        tests:
+          - not_null
+      - name: country_name
+        tests:
+          - not_null
+    tests:
+      - dbt_expectations.expect_compound_columns_to_be_unique:
+          column_list: ['first_name', 'last_name', 'country_name']
+
+  - name: stg_risky_locations
+    description: '{{ doc("stg_risky_locations") }}'
+    columns:
+      - name: city
+        tests:
+          - not_null
+      - name: country_code
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_value_lengths_to_equal:
+              value: 2
+      - name: risk_level
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              value_set: ['High', 'Medium']
+              quote_values: true
+    tests:
+      - dbt_expectations.expect_compound_columns_to_be_unique:
+          column_list: ['city', 'country_code']
+
+  - name: int_company_location_risk
+    description: '{{ doc("int_company_location_risk") }}'
+    columns:
+      - name: company_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_companies')
+              field: company_id
+      - name: company_name
+        tests:
+          - not_null
+      - name: location_risk_score
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2
+
+  - name: int_company_risk
+    description: '{{ doc("int_company_risk") }}'
+    columns:
+      - name: company_id
+        tests:
+          - unique
+          - not_null
+      - name: location_risk_score
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2
+      - name: avg_profit_margin
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: -10
+              max_value: 1
+      - name: has_pep
+        tests:
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              value_set: [0, 1]
+      - name: composite_risk_score
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 10
+
+  - name: int_director_risk
+    description: '{{ doc("int_director_risk") }}'
+    columns:
+      - name: director_id
+        tests:
+          - unique
+          - not_null
+      - name: company_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_companies')
+              field: company_id
+      - name: is_pep
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              value_set: [0, 1]
+
+  - name: int_financial_metrics
+    description: '{{ doc("int_financial_metrics") }}'
+    columns:
+      - name: company_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_companies')
+              field: company_id
+      - name: profit_margin
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: -10
+              max_value: 1
+    tests:
+      - dbt_expectations.expect_compound_columns_to_be_unique:
+          column_list: ['company_id', 'report_date']
+
+  - name: dim_company
+    description: '{{ doc("dim_company") }}'
+    columns:
+      - name: company_id
+        tests:
+          - unique
+          - not_null
+      - name: company_name
+        tests:
+          - not_null
+          - unique
+      - name: incorporation_date
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: DATE '1800-01-01'
+              max_value: DATE '{{ modules.datetime.date.today() }}'
+
+  - name: dim_director
+    description: '{{ doc("dim_director") }}'
+    columns:
+      - name: director_id
+        tests:
+          - unique
+          - not_null
+      - name: company_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_company')
+              field: company_id
+      - name: is_pep
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              value_set: [0, 1]
+
+  - name: dim_location
+    description: '{{ doc("dim_location") }}'
+    columns:
+      - name: city
+        tests:
+          - not_null
+      - name: country_code
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_value_lengths_to_equal:
+              value: 2
+      - name: risk_level
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_in_set:
+              value_set: ['High', 'Medium']
+    tests:
+      - dbt_expectations.expect_compound_columns_to_be_unique:
+          column_list: ['city', 'country_code']
+
+  - name: fact_risk_assessments
+    description: 'Risk assessment fact table'
+    columns:
+      - name: company_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_company')
+              field: company_id
+      - name: composite_risk_score
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 10
+      - name: evaluation_date
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: DATE '{{ modules.datetime.date.today() }}'
+              max_value: DATE '{{ modules.datetime.date.today() }}'
+    tests:
+      - dbt_expectations.expect_compound_columns_to_be_unique:
+          column_list: ['company_id', 'evaluation_date']

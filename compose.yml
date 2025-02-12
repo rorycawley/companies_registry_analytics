@@ -1,33 +1,44 @@
 volumes:
-  postgres_data:
-    driver: local
   companies_registry_db_data:
     driver: local
+  companies_registry_database_data:
+    driver: local    
 
 networks:
-  postgres_network:
+  companies_registry_database_network:
+    name: ${PROJECT_NAME:-companies-registry}-database
     driver: bridge
-  superset_network:
-    driver: bridge
+
 
 
 services:
-  postgres:
+  companies_registry_database:
+    init: true
     image: postgres:16
-    container_name: ${PROJECT_NAME:-companies-registry}_postgres
+    container_name: ${PROJECT_NAME:-companies-registry}_database
     restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"    
+    shm_size: '256mb'
     environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata  # Explicit data directory
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_HOST=${POSTGRES_HOST}  # Required for external connections
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - companies_registry_db_data:/var/lib/postgresql/data
+      - companies_registry_database_data:/var/lib/postgresql/data
       - ./data/synthetic/companies_registry_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    depends_on: []    
+    cap_drop:
+      - ALL    
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -h ${POSTGRES_HOST} -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]
+      start_period: 30s 
       interval: 5s
       timeout: 5s
       retries: 10
@@ -42,11 +53,17 @@ services:
         reservations:
           memory: 512M
     networks:
-      - postgres_network
+      - companies_registry_database_network
     security_opt:
       - no-new-privileges:true
 
   analytics:
+    init: true
+    read_only: true    # Makes the root filesystem read-only
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"    
     build:
       context: ./services/analytics
       dockerfile: Dockerfile
@@ -57,6 +74,7 @@ services:
     image: ${PROJECT_NAME:-companies-registry}-analytics-image
     container_name: ${PROJECT_NAME:-companies-registry}-analytics
     restart: unless-stopped
+    shm_size: '256mb'
     user: superset
     environment:
       FLASK_APP: superset
@@ -78,12 +96,75 @@ services:
       - ./services/analytics/superset_home:${SUPERSET_HOME}:rw
       - ./services/analytics/config:${SUPERSET_DASHBOARD}:ro
       - ./data/transformations:/app/data/transformations:rw
-    networks:
-      - superset_network
+      # Add tmpfs mounts for directories that need write access
+      - type: tmpfs
+        target: /tmp
+      - type: tmpfs
+        target: /var/run
+      - type: tmpfs
+        target: /var/log
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 512M    
+    depends_on: []
     ports:
       - "${SUPERSET_PORT:-8088}:8088"
+    cap_drop:
+      - ALL    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${SUPERSET_PORT:-8088}/health"]
+      start_period: 30s  
       interval: 30s
       timeout: 10s
       retries: 3
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  transformations:
+    init: true
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"    
+    build:
+      context: ./services/transformations
+      dockerfile: Dockerfile
+    image: ${PROJECT_NAME:-companies-registry}-transformation-image
+    container_name: ${PROJECT_NAME:-companies-registry}-transformations
+    restart: no
+    shm_size: '256mb'
+    user: dbtuser
+    environment:
+      - DBT_DATAWAREHOUSE_DB=${DBT_DATAWAREHOUSE_DB}
+      - DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT=${DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT}
+      - DBT_SOURCE_PEPS_PARQUET_EXPORT=${DBT_SOURCE_PEPS_PARQUET_EXPORT}
+      - DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=${DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT}
+    volumes:
+      - /Users/rorycawley/Development/pydev/companies_registry_analytics/data/ingestion:/app/data/ingestion:ro  # Read-only for source data
+      - /Users/rorycawley/Development/pydev/companies_registry_analytics/data/transformation:/app/data/transformation:rw  # Read-write for output
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
+        reservations:
+          memory: 512M
+    depends_on: []
+    cap_drop:
+      - ALL    
+    healthcheck:
+      test: ["CMD", "dbt", "debug"]
+      start_period: 30s       
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
