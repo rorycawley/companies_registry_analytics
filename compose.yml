@@ -146,8 +146,8 @@ services:
       - DBT_SOURCE_PEPS_PARQUET_EXPORT=${DBT_SOURCE_PEPS_PARQUET_EXPORT}
       - DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=${DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT}
     volumes:
-      - /Users/rorycawley/Development/pydev/companies_registry_analytics/data/ingestion:/app/data/ingestion:ro  # Read-only for source data
-      - /Users/rorycawley/Development/pydev/companies_registry_analytics/data/transformation:/app/data/transformation:rw  # Read-write for output
+      - ./data/ingestion:/app/data/ingestion:ro
+      - ./data/transformation:/app/data/transformation:rw
     deploy:
       resources:
         limits:
