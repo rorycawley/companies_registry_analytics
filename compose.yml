@@ -70,24 +70,24 @@ services:
       SUPERSET_LOAD_EXAMPLES: ${SUPERSET_LOAD_EXAMPLES}
       SUPERSET_PORT: ${SUPERSET_PORT}
       SUPERSET_HOME: /app/superset_home
-      SUPERSET_DASHBOARD: /app/config
+      SUPERSET_DASHBOARD: /app/assets
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
       ADMIN_USERNAME: ${SUPERSET_ADMIN_USER}
       ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
       ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
     volumes:
       - ./services/analytics/superset_home:${SUPERSET_HOME}:rw  # Superset configuration and data
-      - ./services/analytics/config:${SUPERSET_DASHBOARD}:ro    # Dashboard configurations
+      - ./services/analytics/assets:${SUPERSET_DASHBOARD}:ro    # Dashboard configurations
       - ./data/transformations:/app/data/transformations:rw     # Transformed data access
     ports:
       - "${SUPERSET_PORT:-8088}:8088"  # Expose Superset web interface
 
-  # Data transformation service (dbt)
+  # Data transformations service (dbt)
   transformations:
     build:
       context: ./services/transformations
       dockerfile: Dockerfile
-    image: ${PROJECT_NAME:-companies-registry}-transformation-image
+    image: ${PROJECT_NAME:-companies-registry}-transformations-image
     container_name: ${PROJECT_NAME:-companies-registry}-transformations
     environment:
       - DBT_DATAWAREHOUSE_DB=${DBT_DATAWAREHOUSE_DB}  # Target database for transformations
@@ -96,4 +96,4 @@ services:
       - DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=${DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT}
     volumes:
       - ./data/ingestion:/app/data/ingestion:ro          # Read access to raw data
-      - ./data/transformation:/app/data/transformation:rw  # Write access for transformed data
+      - ./data/transformations:/app/data/transformations:rw  # Write access for transformed data

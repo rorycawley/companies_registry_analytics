@@ -25,9 +25,9 @@
 FROM python:3.10.12-slim-bullseye
 
 # Declare build arguments with default values
-ARG SUPERSET_HOME=/app/superset_home
-ARG SUPERSET_PORT=8088
-ARG SUPERSET_DASHBOARD=/app/config
+ARG SUPERSET_HOME
+ARG SUPERSET_PORT
+ARG SUPERSET_DASHBOARD
 
 # Set environment variables using the build arguments
 ENV SUPERSET_HOME=${SUPERSET_HOME} \

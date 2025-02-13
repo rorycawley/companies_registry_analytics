@@ -26,7 +26,7 @@ make env-check
 
 The platform consists of four main services:
 - analytics: Data visualization and exploration interface
-- transformation: Data processing and transformation service
+- transformations: Data processing and transformation service
 - ingestion: Data ingestion and integration service
 - registry-database: Core data storage service
 
@@ -94,7 +94,7 @@ docker rmi companies-registry-analytics-image
 docker run -d -p 8088:8088 \
 -v /Users/rorycawley/Development/pydev/companies_registry_analytics/services/analytics/superset_home:/app/superset_home \
 -v /Users/rorycawley/Development/pydev/companies_registry_analytics/data/transformations/transformed_data.duckdb:/app/data/transformations/transformed_data.duckdb \
--v /Users/rorycawley/Development/pydev/companies_registry_analytics/services/analytics/config/:/app/config \
+-v /Users/rorycawley/Development/pydev/companies_registry_analytics/services/analytics/assets/:/app/assets \
 -e SUPERSET_SECRET_KEY="U5ijkoEeu7iJ5BS0O6J1TaNNULDUuLRH0Vz3Lue4dkvUfjTcPaOfrZqW" \
 --name companies-registry-analytics-container \
 companies-registry-analytics-image

@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+echo ""
+echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+echo "Running the Superset docker-entrypoint script"
+echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+echo ""
+
 # Validate mandatory variables
 if [ -z "$SUPERSET_SECRET_KEY" ]; then
     echo "ERROR: SUPERSET_SECRET_KEY environment variable must be set" >&2
@@ -9,7 +15,15 @@ if [ -z "$SUPERSET_SECRET_KEY" ]; then
     exit 1
 fi
 
+echo "Looking to see if we initialise Superset"
+
 if [ ! -f "$SUPERSET_HOME/superset.db" ]; then
+    echo ""
+    echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+    echo "We are initialising Superset"
+    echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+    echo ""
+
     superset db upgrade
 
     superset fab create-admin \
@@ -27,13 +41,30 @@ if [ ! -f "$SUPERSET_HOME/superset.db" ]; then
 
     # Import dashboards (if any)
     DASHBOARD_FILE="${SUPERSET_DASHBOARD}/exported_dashboard.zip"
+
+    echo ""
+    echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+    echo "Looking to see if we import Superset dashboard: ${DASHBOARD_FILE}"
+    echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+    echo ""
+
     if [ -f "$DASHBOARD_FILE" ]; then
+        echo ""
+        echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+        echo "Yes we going to import Superset dashboard: ${DASHBOARD_FILE}"
+        echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+        echo ""
         if ! superset import-dashboards -p "$DASHBOARD_FILE" -u "${ADMIN_USERNAME:-admin}"; then
             echo "Warning: Dashboard import failed" >&2
         fi
     fi
 fi
 
+echo ""
+echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+echo "Finished with the Superset initialisation script"
+echo "🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧"
+echo ""
 
 # Start server with proper binding
 exec superset run -p 8088 --with-threads --reload --debugger --host=0.0.0.0

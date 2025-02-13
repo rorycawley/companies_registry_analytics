@@ -1,11 +1,11 @@
-# docker build --no-cache -t companies-registry-transformation-image .
+# docker build --no-cache -t companies-registry-transformations-image .
 #
 # docker run -it \
-# -e DBT_DATAWAREHOUSE_DB=/app/data/transformation/trans.db \
+# -e DBT_DATAWAREHOUSE_DB=/app/data/transformations/trans.duckdb \
 # -e DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT=/app/data/ingestion/companies_registry/parquet_tables \
 # -e DBT_SOURCE_PEPS_PARQUET_EXPORT=/app/data/ingestion/peps/parquet_tables \
 # -e DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=/app/data/ingestion/risky_locations/parquet_tables \
-# companies-registry-transformation-image \
+# companies-registry-transformations-image \
 # dbt seed
 
 # docker run -it \

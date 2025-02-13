@@ -16,7 +16,7 @@ Add this to the advanced
 
 # Export superset data
 
-TODO create a dashboard for DuckDB, the /app/data/transformation/companies_registry_analysis.duckdb, ensure filter works on dashboard, export the dashboard and on a totally new build import it and see it works (set the dashboard to refresh the data regularly!!!)
+TODO create a dashboard for DuckDB, the /app/data/transformations/companies_registry_analysis.duckdb, ensure filter works on dashboard, export the dashboard and on a totally new build import it and see it works (set the dashboard to refresh the data regularly!!!)
 
 
 # Use these as ways to get insights

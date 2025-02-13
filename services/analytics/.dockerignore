@@ -48,6 +48,6 @@ venv/
 **/.cache
 
 # Data and Assets
-data/transformation
+data/transformations
 
 # Other files
