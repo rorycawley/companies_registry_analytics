@@ -44,51 +44,19 @@
 ### Builder Stage
 FROM python:3.11-slim
 
-# Set environment variables for Python and virtual environment settings
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH=/app \
-    VIRTUAL_ENV=/app/venv \
-    PATH="/app/venv/bin:$PATH" \
-    DLT_HOME=/app
+ENV PYTHONUNBUFFERED=1
 
-# Install git and clean up
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends git && \
-    rm -rf /var/lib/apt/lists/*
-
-# Create a non-root system group and user
-RUN groupadd --system --gid 1001 dltgroup && \
-    useradd --system --uid 1001 --gid dltgroup --shell /bin/bash --create-home dltuser
-
-# Set working directory
 WORKDIR /app
 
-# Copy only requirements to leverage Docker cache
-COPY --chown=dltuser:dltgroup requirements.txt .
+COPY requirements.txt .
 
-# Create a virtual environment, upgrade pip, and install your requirements
-# using uv. The uv line ensures that your system-level libraries are used
-# within the container environment.
-RUN python -m venv ${VIRTUAL_ENV} && \
+RUN python -m venv /app/venv && \
     pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    chown -R dltuser:dltgroup ${VIRTUAL_ENV}
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the project files
-COPY --chown=dltuser:dltgroup . .
+COPY . .
 
-# Create data directories
-RUN mkdir -p /app/data/transformation && \
-    chown -R dltuser:dltgroup /app/data
-
-# Switch to non-root user
-USER dltuser
-
-# Copy the entrypoint script
-COPY --chown=dltuser:dltgroup docker-entrypoint.sh /app/
+COPY docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Set the entrypoint
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-
