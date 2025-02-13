@@ -126,6 +126,37 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  ingest_companies_registry:
+      init: true
+      restart: no
+      build:
+        context: ./services/ingest_companies_registry
+        dockerfile: Dockerfile
+      image: ${PROJECT_NAME:-companies-registry}-ingest-image
+      environment:
+        - POSTGRES_USER=${POSTGRES_USER}
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+        - POSTGRES_DB=${POSTGRES_DB}
+        - POSTGRES_PORT=${POSTGRES_PORT}
+        - POSTGRES_HOST=companies_registry_database
+      volumes:
+        - ./data/ingestion:/app/data/ingestion:rw
+      networks:
+        - companies_registry_database_network
+      depends_on:
+        companies_registry_database:
+          condition: service_healthy
+      tmpfs:
+        - /tmp
+      cap_drop:
+        - ALL
+      security_opt:
+        - no-new-privileges:true
+      logging:
+        options:
+          max-size: "10m"
+          max-file: "3"
+
   transformations:
     init: true
     logging:

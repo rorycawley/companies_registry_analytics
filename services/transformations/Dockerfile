@@ -44,7 +44,9 @@ WORKDIR /app
 # Copy only requirements to leverage Docker cache
 COPY --chown=dbtuser:dbtgroup requirements.txt .
 
-# Create a virtual environment and install dependencies using uv
+# Create a virtual environment, upgrade pip, and install your requirements
+# using uv. The uv line ensures that your system-level libraries are used
+# within the container environment.
 RUN python -m venv ${VIRTUAL_ENV} && \
     pip install --upgrade pip && \
     pip install uv==0.5.29 && \
