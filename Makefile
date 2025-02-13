@@ -122,21 +122,11 @@ run:
 	@echo "$(INFO) $(STEP)Running command in $(word 2,$(MAKECMDGOALS))... 🚀 ($(TIMESTAMP))$(RESET)"
 	@$(call execute_command,docker compose run --rm $(word 2,$(MAKECMDGOALS)) $(wordlist 3,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS)))
 
-nuclear:
+nuke:
 	@echo "$(ERROR) $(STEP)WARNING: This will remove ALL Docker resources! ($(TIMESTAMP))$(RESET)"
 	@echo "$(ERROR) This includes:"
 	@echo "  - All containers (running or stopped)"
 	@echo "  - All volumes"
 	@echo "  - All networks"
 	@echo "  - All images"
-	@echo "$(ERROR) Are you sure? [y/N] "
-	@read -r confirm; \
-	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
-		$(call execute_command,docker system prune -a --volumes -f); \
-		echo "$(SUCCESS) Nuclear cleanup completed"; \
-	else \
-		echo "$(INFO) Nuclear cleanup aborted"; \
-	fi
-
-%:
-	@:
+	@$(call execute_command,docker system prune -a --volumes -f)
