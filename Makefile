@@ -123,7 +123,7 @@ run:
 	@echo "$(INFO) $(STEP)Running command in $(word 2,$(MAKECMDGOALS))... 🚀 ($(TIMESTAMP))$(RESET)"
 	@$(call execute_command,docker compose run --rm $(word 2,$(MAKECMDGOALS)) $(wordlist 3,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS)))
 
-nuke:
+nuke nuclear:
 	@echo "$(ERROR) $(STEP)WARNING: This will remove ALL Docker resources! ($(TIMESTAMP))$(RESET)"
 	@echo "$(ERROR) This includes:"
 	@echo "  - All containers (running or stopped)"
