@@ -31,25 +31,32 @@ services:
       - ./data/synthetic/companies_registry_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # Database initialization script
     networks:
       - companies_registry_database_network
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  
   # Data ingestion service
-  ingest_companies_registry:
+  ingest_companies_registry_database:
     build:
-      context: ./services/ingest_companies_registry
+      context: ./services/ingest_companies_registry_database
       dockerfile: Dockerfile
-    image: ${PROJECT_NAME:-companies-registry}-ingest-image
+    image: ingest-${PROJECT_NAME:-companies-registry}-image
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_HOST=companies_registry_database  # Use database service name for connection
+      - POSTGRES_HOST=${POSTGRES_HOST}  # Use database service name for connection
     volumes:
       - ./data/ingestion:/app/data/ingestion:rw  # Mount ingestion data directory
     networks:
       - companies_registry_database_network
     depends_on:
-      - companies_registry_database
+      companies_registry_database:
+        condition: service_healthy
 
   # Analytics service (Apache Superset)
   analytics:
@@ -96,4 +103,4 @@ services:
       - DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=${DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT}
     volumes:
       - ./data/ingestion:/app/data/ingestion:ro          # Read access to raw data
-      - ./data/transformations:/app/data/transformations:rw  # Write access for transformed data
+      - ./data/transformations:/app/data/transformations:rw  # Write access for transformed data 
