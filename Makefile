@@ -48,9 +48,7 @@ endef
 TIMESTAMP := $(shell date '+%H:%M:%S')
 
 help:
-	@echo "\n$(BLUE)$(BOLD)╔══════════════════════════════════════════════╗$(RESET)"
-	@echo "$(BLUE)$(BOLD)║          🛠️  Available Commands  🛠️           ║$(RESET)"
-	@echo "$(BLUE)$(BOLD)╚══════════════════════════════════════════════╝$(RESET)\n"
+	@echo "$(YELLOW)$(BOLD)          🛠️  Available Commands  🛠️           $(RESET)"
 	@echo "$(BLUE)$(BOLD)Core Commands:$(RESET)"
 	@echo "  $(BOLD)make start$(RESET)        $(GREEN)→$(RESET)  🚀 Start all services"
 	@echo "  $(BOLD)make stop$(RESET)         $(GREEN)→$(RESET)  🛑 Stop all services"

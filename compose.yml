@@ -1,134 +1,139 @@
+# Define named volumes for persisting data
 volumes:
   companies_registry_db_data:
     driver: local
   companies_registry_database_data:
     driver: local    
 
+# Define a network for database-related services
 networks:
   companies_registry_database_network:
+    # Network name is determined by the PROJECT_NAME env variable (default: companies-registry)
     name: ${PROJECT_NAME:-companies-registry}-database
     driver: bridge
 
-
-
+# Define services for the application
 services:
+  # PostgreSQL database service
   companies_registry_database:
-    init: true
-    image: postgres:16
-    container_name: ${PROJECT_NAME:-companies-registry}_database
-    restart: on-failure
+    init: true  # Use an init process to manage reaping zombie processes
+    image: postgres:16  # Use the official PostgreSQL 16 image
+    container_name: ${PROJECT_NAME:-companies-registry}_database  # Container name based on the PROJECT_NAME env variable
+    restart: on-failure  # Restart container only when it fails
     logging:
       options:
-        max-size: "10m"
-        max-file: "3"    
-    shm_size: '256mb'
+        max-size: "10m"  # Maximum log file size before rotation
+        max-file: "3"    # Maximum number of log files to retain
+    shm_size: '256mb'  # Increase shared memory size for PostgreSQL performance
     environment:
-      - PGDATA=/var/lib/postgresql/data/pgdata  # Explicit data directory
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}  # Required for external connections
+      - PGDATA=/var/lib/postgresql/data/pgdata  # Specify the PostgreSQL data directory
+      - POSTGRES_USER=${POSTGRES_USER}          # Database user, set via environment variable
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # Database password, set via environment variable
+      - POSTGRES_DB=${POSTGRES_DB}              # Database name, set via environment variable
+      - POSTGRES_HOST=${POSTGRES_HOST}          # Host setting for external connections
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5432}:5432"  # Map container port 5432 to host port (default: 5432)
     volumes:
-      - companies_registry_database_data:/var/lib/postgresql/data
-      - ./data/synthetic/companies_registry_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    depends_on: []    
+      - companies_registry_database_data:/var/lib/postgresql/data  # Persist database data using the named volume
+      - ./data/synthetic/companies_registry_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # Initialize database using a SQL script (read-only)
+    depends_on: []  # No explicit service dependencies
     cap_drop:
-      - ALL    
+      - ALL  # Drop all Linux capabilities for improved security
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h ${POSTGRES_HOST} -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]
-      start_period: 30s 
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      test: ["CMD-SHELL", "pg_isready -h ${POSTGRES_HOST} -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]  # Check database readiness
+      start_period: 30s  # Wait 30 seconds after container start before initiating health checks
+      interval: 5s      # Run health check every 5 seconds
+      timeout: 5s       # Health check command timeout after 5 seconds
+      retries: 10       # Mark container as unhealthy after 10 failed attempts
     tmpfs:
-      - /tmp
-    user: postgres
+      - /tmp  # Mount /tmp as a temporary filesystem for performance and security
+    user: postgres  # Run container processes as the "postgres" user
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1'
+          memory: 1G  # Maximum memory allocation
+          cpus: '1'   # Maximum CPU usage
         reservations:
-          memory: 512M
+          memory: 512M  # Memory reservation for consistent performance
     networks:
-      - companies_registry_database_network
+      - companies_registry_database_network  # Connect this service to the defined network
     security_opt:
-      - no-new-privileges:true
+      - no-new-privileges:true  # Prevent privilege escalation within the container
 
+  # Service for ingesting companies registry data
   ingest_companies_registry:
-        init: true
-        restart: no
-        container_name: ${PROJECT_NAME:-companies-registry}_ingest
-        build:
-          context: ./services/ingest_companies_registry
-          dockerfile: Dockerfile
-        image: ${PROJECT_NAME:-companies-registry}-ingest-image
-        environment:
-          - POSTGRES_USER=${POSTGRES_USER}
-          - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-          - POSTGRES_DB=${POSTGRES_DB}
-          - POSTGRES_PORT=${POSTGRES_PORT}
-          - POSTGRES_HOST=companies_registry_database
-        volumes:
-          - ./data/ingestion:/app/data/ingestion:rw
-        networks:
-          - companies_registry_database_network
-        depends_on:
-          companies_registry_database:
-            condition: service_healthy
-        tmpfs:
-          - /tmp
-        cap_drop:
-          - ALL
-        security_opt:
-          - no-new-privileges:true
-        logging:
-          options:
-            max-size: "10m"
-            max-file: "3"
-
-  analytics:
-    init: true
-    read_only: true    # Makes the root filesystem read-only
+    init: true  # Use an init process for managing child processes
+    restart: no  # Do not automatically restart this container
+    container_name: ${PROJECT_NAME:-companies-registry}_ingest  # Container name based on PROJECT_NAME
+    build:
+      context: ./services/ingest_companies_registry  # Build context directory for Dockerfile
+      dockerfile: Dockerfile  # Dockerfile used for building the image
+    image: ${PROJECT_NAME:-companies-registry}-ingest-image  # Tag for the built image
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=companies_registry_database  # Connect to the database service using its container name
+    volumes:
+      - ./data/ingestion:/app/data/ingestion:rw  # Mount ingestion data directory into the container (read-write)
+    networks:
+      - companies_registry_database_network  # Connect to the same network as the database
+    depends_on:
+      companies_registry_database:
+        condition: service_healthy  # Ensure the database is healthy before starting this service
+    tmpfs:
+      - /tmp  # Mount /tmp as a temporary filesystem
+    cap_drop:
+      - ALL  # Drop all capabilities to minimize security risks
+    security_opt:
+      - no-new-privileges:true  # Prevent escalation of privileges in the container
     logging:
       options:
         max-size: "10m"
-        max-file: "3"    
+        max-file: "3"  # Configure log rotation
+
+  # Analytics service (e.g., Apache Superset)
+  analytics:
+    init: true  # Use an init process
+    read_only: true  # Make the container's root filesystem read-only for added security
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
     build:
-      context: ./services/analytics
-      dockerfile: Dockerfile
+      context: ./services/analytics  # Build context directory for analytics service
+      dockerfile: Dockerfile  # Dockerfile for building the image
       args:
-        SUPERSET_HOME: ${SUPERSET_HOME}
-        SUPERSET_PORT: ${SUPERSET_PORT}
-        SUPERSET_DASHBOARD: ${SUPERSET_DASHBOARD}
-    image: ${PROJECT_NAME:-companies-registry}-analytics-image
-    container_name: ${PROJECT_NAME:-companies-registry}-analytics
-    restart: unless-stopped
-    shm_size: '256mb'
-    user: superset
+        SUPERSET_HOME: ${SUPERSET_HOME}  # Build-time argument for Superset home directory
+        SUPERSET_PORT: ${SUPERSET_PORT}  # Build-time argument for Superset port
+        SUPERSET_DASHBOARD: ${SUPERSET_DASHBOARD}  # Build-time argument for Superset dashboard config
+    image: ${PROJECT_NAME:-companies-registry}-analytics-image  # Image name tag for analytics service
+    container_name: ${PROJECT_NAME:-companies-registry}-analytics  # Container name based on PROJECT_NAME
+    restart: unless-stopped  # Restart container unless explicitly stopped
+    shm_size: '256mb'  # Increase shared memory for the service
+    user: superset  # Run container processes as the "superset" user
     environment:
-      FLASK_APP: superset
-      FLASK_ENV: ${FLASK_ENV}
-      SUPERSET_ENV: ${SUPERSET_ENV}
-      SUPERSET_LOAD_EXAMPLES: ${SUPERSET_LOAD_EXAMPLES}
-      SUPERSET_PORT: ${SUPERSET_PORT}
-      SUPERSET_TIMEOUT: ${SUPERSET_TIMEOUT}
-      SUPERSET_HOME: /app/superset_home
-      SUPERSET_DASHBOARD: /app/config
-      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
-      PREVENT_UNSAFE_DB_CONNECTIONS: ${PREVENT_UNSAFE_DB_CONNECTIONS}
-      ENABLE_TEMPLATE_PROCESSING: ${ENABLE_TEMPLATE_PROCESSING}
-      ADMIN_USERNAME: ${SUPERSET_ADMIN_USER}
-      ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
-      ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
-      PYTHONPATH: /app
+      FLASK_APP: superset  # Define the Flask application entry point
+      FLASK_ENV: ${FLASK_ENV}  # Flask environment setting (e.g., development, production)
+      SUPERSET_ENV: ${SUPERSET_ENV}  # Superset environment configuration
+      SUPERSET_LOAD_EXAMPLES: ${SUPERSET_LOAD_EXAMPLES}  # Flag to load example dashboards and data
+      SUPERSET_PORT: ${SUPERSET_PORT}  # Port on which Superset will run
+      SUPERSET_TIMEOUT: ${SUPERSET_TIMEOUT}  # Request timeout setting for Superset
+      SUPERSET_HOME: /app/superset_home  # Container path for Superset home directory
+      SUPERSET_DASHBOARD: /app/config  # Container path for Superset dashboard configuration
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}  # Secret key used by Superset for session management
+      PREVENT_UNSAFE_DB_CONNECTIONS: ${PREVENT_UNSAFE_DB_CONNECTIONS}  # Security setting for database connections
+      ENABLE_TEMPLATE_PROCESSING: ${ENABLE_TEMPLATE_PROCESSING}  # Enable or disable template processing
+      ADMIN_USERNAME: ${SUPERSET_ADMIN_USER}  # Admin username for Superset
+      ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}  # Admin password for Superset
+      ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}  # Admin email for Superset notifications
+      PYTHONPATH: /app  # Set the Python path for module discovery
     volumes:
-      - ./services/analytics/superset_home:${SUPERSET_HOME}:rw
-      - ./services/analytics/config:${SUPERSET_DASHBOARD}:ro
-      - ./data/transformations:/app/data/transformations:rw
-      # Add tmpfs mounts for directories that need write access
+      - ./services/analytics/superset_home:${SUPERSET_HOME}:rw  # Map Superset home directory (read-write)
+      - ./services/analytics/config:${SUPERSET_DASHBOARD}:ro  # Map dashboard config directory (read-only)
+      - ./data/transformations:/app/data/transformations:rw  # Mount transformations data directory (read-write)
+      # Mount tmpfs for directories that require write access without persisting data
       - type: tmpfs
         target: /tmp
       - type: tmpfs
@@ -138,66 +143,66 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1'
+          memory: 1G  # Memory usage limit
+          cpus: '1'   # CPU usage limit
         reservations:
-          memory: 512M    
-    depends_on: []
+          memory: 512M  # Reserved memory for smoother operation
+    depends_on: []  # No explicit dependencies; service starts independently
     ports:
-      - "${SUPERSET_PORT:-8088}:8088"
+      - "${SUPERSET_PORT:-8088}:8088"  # Expose Superset web interface on the specified port (default: 8088)
     cap_drop:
-      - ALL    
+      - ALL  # Drop all capabilities for enhanced security
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${SUPERSET_PORT:-8088}/health"]
-      start_period: 30s  
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD", "curl", "-f", "http://localhost:${SUPERSET_PORT:-8088}/health"]  # Health check endpoint for Superset
+      start_period: 30s  # Allow time for initialization before health checks begin
+      interval: 30s      # Run health check every 30 seconds
+      timeout: 10s       # Health check timeout after 10 seconds
+      retries: 3         # Mark container as unhealthy after 3 failed checks
     tmpfs:
-      - /tmp
+      - /tmp  # Mount /tmp as a temporary filesystem
     security_opt:
-      - no-new-privileges:true
+      - no-new-privileges:true  # Prevent new privileges from being added
 
-  
+  # Data transformation service using dbt
   transformations:
-    init: true
+    init: true  # Use an init process for proper signal handling
     logging:
       options:
         max-size: "10m"
-        max-file: "3"    
+        max-file: "3"
     build:
-      context: ./services/transformations
-      dockerfile: Dockerfile
-    image: ${PROJECT_NAME:-companies-registry}-transformation-image
-    container_name: ${PROJECT_NAME:-companies-registry}-transformations
-    restart: no
-    shm_size: '256mb'
-    user: dbtuser
+      context: ./services/transformations  # Build context directory for the transformation service
+      dockerfile: Dockerfile  # Dockerfile used to build the service image
+    image: ${PROJECT_NAME:-companies-registry}-transformation-image  # Tag for the transformation service image
+    container_name: ${PROJECT_NAME:-companies-registry}-transformations  # Container name based on PROJECT_NAME
+    restart: no  # Do not automatically restart this container
+    shm_size: '256mb'  # Increase shared memory for the service
+    user: dbtuser  # Run processes as the non-root "dbtuser"
     environment:
-      - DBT_DATAWAREHOUSE_DB=${DBT_DATAWAREHOUSE_DB}
-      - DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT=${DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT}
-      - DBT_SOURCE_PEPS_PARQUET_EXPORT=${DBT_SOURCE_PEPS_PARQUET_EXPORT}
-      - DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=${DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT}
+      - DBT_DATAWAREHOUSE_DB=${DBT_DATAWAREHOUSE_DB}  # Name of the data warehouse database for dbt
+      - DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT=${DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT}  # File path for companies registry export
+      - DBT_SOURCE_PEPS_PARQUET_EXPORT=${DBT_SOURCE_PEPS_PARQUET_EXPORT}  # File path for PEPS export
+      - DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=${DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT}  # File path for risky locations export
     volumes:
-      - ./data/ingestion:/app/data/ingestion:ro
-      - ./data/transformation:/app/data/transformation:rw
+      - ./data/ingestion:/app/data/ingestion:ro  # Mount ingestion data directory as read-only
+      - ./data/transformation:/app/data/transformation:rw  # Mount transformation data directory as read-write
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1'
+          memory: 1G  # Memory usage limit for the service
+          cpus: '1'   # CPU usage limit
         reservations:
-          memory: 512M
-    depends_on: []
+          memory: 512M  # Memory reservation for reliable performance
+    depends_on: []  # No explicit dependencies
     cap_drop:
-      - ALL    
+      - ALL  # Drop all Linux capabilities for security hardening
     healthcheck:
-      test: ["CMD", "dbt", "debug"]
-      start_period: 30s       
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD", "dbt", "debug"]  # Run `dbt debug` to verify service health
+      start_period: 30s  # Wait 30 seconds after startup before starting health checks
+      interval: 30s      # Health check interval
+      timeout: 10s       # Timeout for health check command
+      retries: 3         # Retry count before marking container as unhealthy
     tmpfs:
-      - /tmp
+      - /tmp  # Mount /tmp as a temporary filesystem to handle ephemeral data
     security_opt:
-      - no-new-privileges:true
+      - no-new-privileges:true  # Enhance security by preventing privilege escalation
