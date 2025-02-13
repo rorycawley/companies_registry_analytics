@@ -37,4 +37,10 @@ def load_selected_tables_from_database():
     # Print load info
     print(info)
 
-load_selected_tables_from_database()
+
+def main():
+    load_selected_tables_from_database()
+
+
+if __name__ == '__main__':
+    main()

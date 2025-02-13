@@ -1,28 +1,4 @@
-# docker build --no-cache -t companies-registry-analytics-image .
-#
-#
-# docker run -d \
-#     --env-file .env \
-#     -p "${SUPERSET_PORT:-8088}:8088" \
-#     -v "$(pwd)/superset_home:${SUPERSET_HOME}" \
-#     -v "$(pwd)/config:${SUPERSET_DASHBOARD}" \
-#     -v "$(pwd)/data/transformations:/app/data/transformations" \
-#     --name "${PROJECT_NAME:-companies-registry}-analytics" \
-#     ${PROJECT_NAME:-companies-registry}-analytics-image
-# 
-# duckdb:///data/transformations/transformed_data.duckdb
-# 
-# docker rm -f companies-registry-analytics
-# rm -rf superset_home 
-# docker rmi companies-registry-analytics-image  
-#
-# docker logs companies-registry-analytics
-#
-# docker exec -it companies-registry-analytics superset export-dashboards -f /app/superset_home/exported_dashboards.zip  
-# Use python:3.10.12-slim-bullseye for Superset. Debian-based images enable faster installation 
-# of pre-built Python wheels, significantly improving build times compared to Alpine, which 
-# requires compiling from source.
-FROM python:3.10.12-slim-bullseye
+FROM python:3.10.12-slim
 
 # Declare build arguments with default values
 ARG SUPERSET_HOME

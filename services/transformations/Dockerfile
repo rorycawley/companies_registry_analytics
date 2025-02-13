@@ -1,25 +1,4 @@
-# docker build --no-cache -t companies-registry-transformations-image .
-#
-# docker run -it \
-# -e DBT_DATAWAREHOUSE_DB=/app/data/transformations/trans.duckdb \
-# -e DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT=/app/data/ingestion/companies_registry/parquet_tables \
-# -e DBT_SOURCE_PEPS_PARQUET_EXPORT=/app/data/ingestion/peps/parquet_tables \
-# -e DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=/app/data/ingestion/risky_locations/parquet_tables \
-# companies-registry-transformations-image \
-# dbt seed
-
-# docker run -it \
-# -e DBT_DATAWAREHOUSE_DB=/app/data/transformation/trans.db \
-# -e DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT=/app/data/ingestion/companies_registry/parquet_tables \
-# -e DBT_SOURCE_PEPS_PARQUET_EXPORT=/app/data/ingestion/peps/parquet_tables \
-# -e DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=/app/data/ingestion/risky_locations/parquet_tables \
-# -v $(pwd)/data/ingestion:/app/data/ingestion:ro \
-# -v $(pwd)/data/transformation:/app/data/transformation:rw \
-# --user dbtuser \
-# --tmpfs /tmp \
-# --entrypoint bash \
-# companies-registry-transformation-image
-FROM --platform=linux/amd64 python:3.11-slim
+FROM python:3.10.12-slim
 
 ENV PYTHONUNBUFFERED=1
 
