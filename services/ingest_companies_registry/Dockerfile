@@ -36,17 +36,10 @@
 # Build the image:
 #   docker build --no-cache -t companies-registry-dlt-ingestion-image .
 #
-# Run the container (example):
-#   docker run -it \
-#     -e POSTGRES_USER=your_user \
-#     -e POSTGRES_PASSWORD=your_password \
-#     -e POSTGRES_HOST=your_host \
-#     -e POSTGRES_PORT=5432 \
-#     -e POSTGRES_DB=your_db \
-#     -v "$(pwd)/data:/app/data:rw" \
-#     companies-registry-dlt-ingestion-image
-#
-# syntax=docker/dockerfile:1
+# docker run --rm \
+#   --env-file ../../.env \
+#   -v /Users/rorycawley/Development/pydev/companies_registry_analytics/data:/app/data \
+#   ingest_companies_registry_db_image
 
 ### Builder Stage
 FROM python:3.11-slim
@@ -79,8 +72,7 @@ COPY --chown=dltuser:dltgroup requirements.txt .
 # within the container environment.
 RUN python -m venv ${VIRTUAL_ENV} && \
     pip install --upgrade pip && \
-    pip install uv==0.5.29 && \
-    uv pip install --system --no-cache -r requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt && \
     chown -R dltuser:dltgroup ${VIRTUAL_ENV}
 
 # Copy the rest of the project files
