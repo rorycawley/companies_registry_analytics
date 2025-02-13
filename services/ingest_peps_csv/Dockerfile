@@ -16,8 +16,12 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Create a non-root user for security
-RUN useradd -m -r c_reg_db_pipeline_user && \
-    chown -R c_reg_db_pipeline_user:c_reg_db_pipeline_user /app
-USER c_reg_db_pipeline_user
+RUN useradd -m -r peps_csv_pipeline_user && \
+    chown -R peps_csv_pipeline_user:peps_csv_pipeline_user /app
+USER peps_csv_pipeline_user
+
+# Create the output directory and set permissions
+RUN mkdir -p /app/data/ingestion/peps && \
+    chown -R peps_csv_pipeline_user:peps_csv_pipeline_user /app/data/ingestion/peps
 
 ENTRYPOINT ["docker-entrypoint.sh"]

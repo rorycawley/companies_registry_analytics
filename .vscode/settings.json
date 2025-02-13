@@ -1,0 +1,12 @@
+{
+    "dbcode.connections": [
+        {
+            "connectionId": "t1gvey4sU2GLEKZGVJQaa",
+            "name": "company registry",
+            "driver": "duckdb",
+            "color": "#00A6FF",
+            "socket": "companies_registry_analytics/data/ingestion/companies_registry/companies_registry.duckdb",
+            "connectionType": "socket"
+        }
+    ]
+}

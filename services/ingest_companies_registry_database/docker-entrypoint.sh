@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
+set -e
 
-echo "Starting ingest companies registry DLT ingestion pipeline..."
+echo "Starting to ingest the Companies Registry database in the ingestion pipeline..."
 python /app/pipeline.py

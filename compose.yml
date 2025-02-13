@@ -44,6 +44,7 @@ services:
       context: ./services/ingest_companies_registry_database
       dockerfile: Dockerfile
     image: ingest-${PROJECT_NAME:-companies-registry}-image
+    container_name: ingest-${PROJECT_NAME:-companies-registry}
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -57,6 +58,34 @@ services:
     depends_on:
       companies_registry_database:
         condition: service_healthy
+
+  # PEPs csv data ingestion service
+  ingest_peps_csv:
+    build:
+      context: ./services/ingest_peps_csv
+      dockerfile: Dockerfile
+    image: ingest-${PROJECT_NAME:-companies-registry}-peps-image
+    container_name: ingest-${PROJECT_NAME:-companies-registry}-peps
+    environment:
+      - CSV_FILE_PATH_PEPS=${CSV_FILE_PATH_PEPS}
+      - PARQUET_EXPORT_DIR_PEPS=${PARQUET_EXPORT_DIR_PEPS}
+    volumes:
+      - ./data/synthetic/peps:/app/data/synthetic/peps:ro
+      - ./data/ingestion/peps/parquet_tables:/app/data/ingestion/peps/parquet_tables:rw
+  
+  ingest_risky_locations_csv:
+    build:
+      context: ./services/ingest_risky_locations_csv
+      dockerfile: Dockerfile
+    image: ingest-${PROJECT_NAME:-companies-registry}-risky_locations-image
+    container_name: ingest-${PROJECT_NAME:-companies-registry}-risky_locations
+    environment:
+      - CSV_FILE_PATH_RISKY_LOCATIONS=${CSV_FILE_PATH_RISKY_LOCATIONS}
+      - PARQUET_EXPORT_DIR_RISKY_LOCATIONS=${PARQUET_EXPORT_DIR_RISKY_LOCATIONS}
+    volumes:
+      - ./data/synthetic/risky_locations:/app/data/synthetic/risky_locations:ro
+      - ./data/ingestion/risky_locations/parquet_tables:/app/data/ingestion/risky_locations/parquet_tables:rw
+
 
   # Analytics service (Apache Superset)
   analytics:

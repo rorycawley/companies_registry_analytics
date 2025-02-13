@@ -100,8 +100,10 @@ stop:
 clean: stop
 	@echo "$(INFO) $(STEP)Cleaning up resources... 🧹 ($(TIMESTAMP))$(RESET)"
 	@$(call execute_command,docker compose down --volumes --remove-orphans)
-	# @rm -rf data/ingestion/companies_registry/*.duckdb
-	# @rm -rf data/ingestion/companies_registry/parquet_tables/*	
+	@rm -rf data/ingestion/companies_registry/*.duckdb
+	@rm -rf data/ingestion/companies_registry/parquet_tables/*
+	@rm -rf data/ingestion/peps/parquet_tables/*
+	@rm -rf data/ingestion/risky_locations/parquet_tables/*
 	@rm -rf data/transformations/*	
 	@rm -rf services/analytics/superset_home/*
 	@echo "$(SUCCESS) Cleanup completed"
