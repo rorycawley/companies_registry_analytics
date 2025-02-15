@@ -1,105 +1,111 @@
-# Define persistent storage volumes
+x-environment: &base-postgres-env
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB}
+  POSTGRES_HOST: ${POSTGRES_HOST}
+  POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+
+x-project-name: &project-name
+  PROJECT_NAME: ${PROJECT_NAME:-companies-registry}
+
+x-healthcheck: &default-healthcheck
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
 volumes:
-  companies_registry_db_data:
-    driver: local
-  companies_registry_database_data:
+  companies-registry-database-data:
     driver: local    
 
-# Define network for service communication
 networks:
-  companies_registry_database_network:
+  companies-registry-database-network:
     name: ${PROJECT_NAME:-companies-registry}-database
     driver: bridge
 
-# Service definitions
 services:
-  # PostgreSQL database service
-  companies_registry_database:
+  companies-registry-database:
     image: postgres:16
-    container_name: ${PROJECT_NAME:-companies-registry}_database
+    container_name: ${PROJECT_NAME:-companies-registry}-database
     restart: on-failure
     environment:
-      - PGDATA=/var/lib/postgresql/data/pgdata
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"  # Map container port to host
+      <<: *base-postgres-env
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - companies_registry_database_data:/var/lib/postgresql/data  # Persist database data
-      - ./data/synthetic/companies_registry_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # Database initialization script
+      - companies-registry-database-data:/var/lib/postgresql/data
+      - ./data/synthetic/companies_registry_db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     networks:
-      - companies_registry_database_network
+      - companies-registry-database-network
     healthcheck:
+      <<: *default-healthcheck
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
   
-  # Data ingestion service
-  ingest_companies_registry_database:
+  ingest-companies-registry-database:
     build:
       context: ./services/ingest_companies_registry_database
       dockerfile: Dockerfile
-    image: ingest-${PROJECT_NAME:-companies-registry}-image
     container_name: ingest-${PROJECT_NAME:-companies-registry}
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_HOST=${POSTGRES_HOST}  # Use database service name for connection
+      <<: *base-postgres-env
     volumes:
-      - ./data/ingestion:/app/data/ingestion:rw  # Mount ingestion data directory
+      - ./data/ingestion:/app/data/ingestion:rw
     networks:
-      - companies_registry_database_network
+      - companies-registry-database-network
     depends_on:
-      companies_registry_database:
+      companies-registry-database:
         condition: service_healthy
 
-  # PEPs csv data ingestion service
-  ingest_peps_csv:
+  ingest-peps-csv:
     build:
       context: ./services/ingest_peps_csv
       dockerfile: Dockerfile
-    image: ingest-${PROJECT_NAME:-companies-registry}-peps-image
     container_name: ingest-${PROJECT_NAME:-companies-registry}-peps
-    environment:
-      - CSV_FILE_PATH_PEPS=${CSV_FILE_PATH_PEPS}
-      - PARQUET_EXPORT_DIR_PEPS=${PARQUET_EXPORT_DIR_PEPS}
+    environment: &peps-env
+      CSV_FILE_PATH_PEPS: ${CSV_FILE_PATH_PEPS}
+      PARQUET_EXPORT_DIR_PEPS: ${PARQUET_EXPORT_DIR_PEPS}
     volumes:
       - ./data/synthetic/peps:/app/data/synthetic/peps:ro
       - ./data/ingestion/peps/parquet_tables:/app/data/ingestion/peps/parquet_tables:rw
-  
-  ingest_risky_locations_csv:
+
+  ingest-risky-locations-csv:
     build:
       context: ./services/ingest_risky_locations_csv
       dockerfile: Dockerfile
-    image: ingest-${PROJECT_NAME:-companies-registry}-risky_locations-image
-    container_name: ingest-${PROJECT_NAME:-companies-registry}-risky_locations
-    environment:
-      - CSV_FILE_PATH_RISKY_LOCATIONS=${CSV_FILE_PATH_RISKY_LOCATIONS}
-      - PARQUET_EXPORT_DIR_RISKY_LOCATIONS=${PARQUET_EXPORT_DIR_RISKY_LOCATIONS}
+    container_name: ingest-${PROJECT_NAME:-companies-registry}-risky-locations
+    environment: &risky-locations-env
+      CSV_FILE_PATH_RISKY_LOCATIONS: ${CSV_FILE_PATH_RISKY_LOCATIONS}
+      PARQUET_EXPORT_DIR_RISKY_LOCATIONS: ${PARQUET_EXPORT_DIR_RISKY_LOCATIONS}
     volumes:
       - ./data/synthetic/risky_locations:/app/data/synthetic/risky_locations:ro
       - ./data/ingestion/risky_locations/parquet_tables:/app/data/ingestion/risky_locations/parquet_tables:rw
 
+  transformations:
+    build:
+      context: ./services/transformations
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_NAME:-companies-registry}-transformations
+    environment: &dbt-env
+      DBT_DATAWAREHOUSE_DB: ${DBT_DATAWAREHOUSE_DB}
+      DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT: ${DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT}
+      DBT_SOURCE_PEPS_PARQUET_EXPORT: ${DBT_SOURCE_PEPS_PARQUET_EXPORT}
+      DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT: ${DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT}
+    volumes:
+      - ./data/ingestion:/app/data/ingestion:ro
+      - ./data/transformations:/app/data/transformations:rw
 
-  # Analytics service (Apache Superset)
   analytics:
     build:
       context: ./services/analytics
       dockerfile: Dockerfile
-      args:
+      args: &superset-build-args
         SUPERSET_HOME: ${SUPERSET_HOME}
         SUPERSET_PORT: ${SUPERSET_PORT}
         SUPERSET_DASHBOARD: ${SUPERSET_DASHBOARD}
-    image: ${PROJECT_NAME:-companies-registry}-analytics-image
     container_name: ${PROJECT_NAME:-companies-registry}-analytics
     restart: unless-stopped
-    environment:
+    environment: &superset-env
       FLASK_APP: superset
       FLASK_ENV: ${FLASK_ENV}
       SUPERSET_ENV: ${SUPERSET_ENV}
@@ -112,24 +118,11 @@ services:
       ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
       ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
     volumes:
-      - ./services/analytics/superset_home:${SUPERSET_HOME}:rw  # Superset configuration and data
-      - ./services/analytics/assets:${SUPERSET_DASHBOARD}:ro    # Dashboard configurations
-      - ./data/transformations:/app/data/transformations:rw     # Transformed data access
+      - ./services/analytics/superset_home:${SUPERSET_HOME}:rw
+      - ./services/analytics/assets:${SUPERSET_DASHBOARD}:ro
+      - ./data/transformations:/app/data/transformations:rw
     ports:
-      - "${SUPERSET_PORT:-8088}:8088"  # Expose Superset web interface
-
-  # Data transformations service (dbt)
-  transformations:
-    build:
-      context: ./services/transformations
-      dockerfile: Dockerfile
-    image: ${PROJECT_NAME:-companies-registry}-transformations-image
-    container_name: ${PROJECT_NAME:-companies-registry}-transformations
-    environment:
-      - DBT_DATAWAREHOUSE_DB=${DBT_DATAWAREHOUSE_DB}  # Target database for transformations
-      - DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT=${DBT_SOURCE_COMPANIES_REGISTRY_PARQUET_EXPORT}
-      - DBT_SOURCE_PEPS_PARQUET_EXPORT=${DBT_SOURCE_PEPS_PARQUET_EXPORT}
-      - DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT=${DBT_SOURCE_RISKY_LOCATIONS_PARQUET_EXPORT}
-    volumes:
-      - ./data/ingestion:/app/data/ingestion:ro          # Read access to raw data
-      - ./data/transformations:/app/data/transformations:rw  # Write access for transformed data 
+      - "${SUPERSET_PORT:-8088}:8088"
+    healthcheck:
+      <<: *default-healthcheck
+      test: ["CMD-SHELL", "curl -f http://localhost:${SUPERSET_PORT:-8088}/health || exit 1"]
