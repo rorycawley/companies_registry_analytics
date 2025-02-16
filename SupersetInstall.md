@@ -1,8 +1,61 @@
+# DuckDB
+
+```sh
+pip uninstall duckdb duckdb-engine
+pip install "duckdb==0.8.1" "duckdb-engine==0.9.2"
+```
+
+# In case there is an existing superset
+```sh
+docker stop superset
+docker rm superset
+rm ~/.superset/superset.db
+deactivate
+rm -rf venv
+```
+
+# Some basic installs
+```sh
+xcode-select --install
+brew install readline pkg-config libffi openssl mysql postgresql@14
+pip install Pillow
+pip install --upgrade setuptools pip
+export LDFLAGS="-L$(brew --prefix openssl)/lib"
+export CFLAGS="-I$(brew --prefix openssl)/include"
+```
+
+# Install Python 3.10 if not already installed
+```sh
+pyenv install 3.10.13
+pyenv local 3.10.13
+python3 -m venv venv
+source venv/bin/activate
+```
+
+# Install superset
+```sh
+pip install apache-superset==3.1.2
+pip install "duckdb==0.8.1" "duckdb-engine==0.9.2"
+export SUPERSET_SECRET_KEY="sYBpNA2+bQHvmXcojOVp53b8xbmN3ZQ"
+export FLASK_APP=superset
+superset db upgrade
+superset fab create-admin \
+  --username admin \
+  --firstname Superset \
+  --lastname Admin \
+  --email admin@example.com \
+  --password admin
+superset init
+
+superset run -p 8088 --with-threads --reload --debugger
+or
+gunicorn -w 2 --timeout 120 -b localhost:8088 "superset.app:create_app()"
+```
 
 # DuckDb setup
 
 For trans.duckdb in the same folder as the execution you can add in this connection string:
-duckdb:///./trans.duckdb
+duckdb:///./trans.db
 
 Add this to the advanced
 ```json
@@ -16,8 +69,12 @@ Add this to the advanced
 
 # Export superset data
 
-TODO create a dashboard for DuckDB, the /app/data/transformations/companies_registry_analysis.duckdb, ensure filter works on dashboard, export the dashboard and on a totally new build import it and see it works (set the dashboard to refresh the data regularly!!!)
+TODO create a dashboard for DuckDB, the /app/data/transformation/companies_registry_analysis.duckdb, ensure filter works on dashboard, export the dashboard and on a totally new build import it and see it works (set the dashboard to refresh the data regularly!!!)
 
+```sh
+superset export_dashboards
+superset import_datasources -p ./exported_dashboard.zip -u 'admin'
+```
 
 # Use these as ways to get insights
 
@@ -42,27 +99,17 @@ This visualization should be implemented as a pie chart or donut chart to show t
 
 ```sql
 SELECT 
-    dim_location.city,
-    dim_location.country_code,
-    COUNT(*) as company_count
-FROM dim_location
-INNER JOIN dim_company 
-    ON dim_location.city = dim_company.city 
-    AND dim_location.country_code = dim_company.country_code
-WHERE dim_location.risk_level = 'High'
-GROUP BY 
-    dim_location.city,
-    dim_location.country_code
+    l.city,
+    l.country_code,
+    COUNT(DISTINCT c.company_id) as company_count
+FROM dim_location l
+JOIN dim_company c ON l.city = c.city AND l.country_code = c.country_code
+WHERE l.risk_level = 'High'
+GROUP BY l.city, l.country_code
 ORDER BY company_count DESC
-LIMIT 10
+LIMIT 10;
 ```
-{
-    "engine_params": {
-        "connect_args": {
-            "read_only": true
-        }
-    }
-}
+
 This should be visualized as a bar chart showing the concentration of companies in high-risk locations.
 
 ## PEP Director Monitoring
@@ -89,14 +136,6 @@ FROM fact_risk_assessments r
 JOIN dim_company c
     ON r.company_id = c.company_id
 ORDER BY r.composite_risk_score DESC;
-
-SELECT
-    c.company_name,
-    ROUND(r.composite_risk_score, 2) as composite_risk_score
-FROM fact_risk_assessments r
-JOIN dim_company c
-    ON r.company_id = c.company_id
-ORDER BY r.composite_risk_score DESC;
 ```
 
 We can show a bar chart that displays each company’s composite risk score. This visualization makes it easy to compare risk levels across companies.
@@ -116,15 +155,6 @@ FROM fact_risk_assessments r
 JOIN dim_company c
     ON r.company_id = c.company_id
 GROUP BY c.city, c.country_code;
-
-SELECT
-    c.city,
-    c.country_code,
-    ROUND(AVG(r.composite_risk_score), 2) AS avg_composite_risk
-FROM fact_risk_assessments r
-JOIN dim_company c
-    ON r.company_id = c.company_id
-GROUP BY c.city, c.country_code;
 ```
 
 ## Risk Trend by Incorporation Year
@@ -138,15 +168,6 @@ Time-series Line Chart or Bar Chart
 SELECT
     EXTRACT(YEAR FROM c.incorporation_date) AS incorporation_year,
     AVG(r.composite_risk_score) AS avg_composite_risk
-FROM fact_risk_assessments r
-JOIN dim_company c
-    ON r.company_id = c.company_id
-GROUP BY incorporation_year
-ORDER BY incorporation_year;
-
-SELECT
-    EXTRACT(YEAR FROM c.incorporation_date) AS incorporation_year,
-    ROUND(AVG(r.composite_risk_score), 2) AS avg_composite_risk
 FROM fact_risk_assessments r
 JOIN dim_company c
     ON r.company_id = c.company_id
@@ -180,17 +201,6 @@ By joining our company and location dimensions, we can analyze how the average c
 SELECT
     l.risk_level,
     AVG(r.composite_risk_score) AS avg_composite_risk
-FROM fact_risk_assessments r
-JOIN dim_company c
-    ON r.company_id = c.company_id
-JOIN dim_location l
-    ON c.city = l.city
-    AND c.country_code = l.country_code
-GROUP BY l.risk_level;
-
-SELECT
-    l.risk_level,
-    ROUND(AVG(r.composite_risk_score), 2) AS avg_composite_risk
 FROM fact_risk_assessments r
 JOIN dim_company c
     ON r.company_id = c.company_id

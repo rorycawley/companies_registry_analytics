@@ -117,6 +117,7 @@ services:
       ADMIN_USERNAME: ${SUPERSET_ADMIN_USER}
       ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD}
       ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL}
+      SQLALCHEMY_CUSTOM_USER_AGENT:
     volumes:
       - ./services/analytics/superset_home:${SUPERSET_HOME}:rw
       - ./services/analytics/assets:${SUPERSET_DASHBOARD}:ro

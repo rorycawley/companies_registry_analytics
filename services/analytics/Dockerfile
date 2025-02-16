@@ -47,7 +47,11 @@ RUN python -m venv /app/venv && \
     . /app/venv/bin/activate && \
     pip install --upgrade pip && \
     pip install uv==0.5.29 && \
-    uv pip install --system --no-cache -r requirements.txt && \
+    # Remove the --system flag to install in the virtual environment
+    uv pip install --no-cache -r requirements.txt && \
+    # Ensure we're in the virtual environment for the verification
+    . /app/venv/bin/activate && \
+    python -c "import duckdb; import duckdb_engine; print(f'DuckDB version: {duckdb.__version__}, Engine version: {duckdb_engine.__version__}')" && \
     chown -R superset:superset /app/venv
 
 # Copy entrypoint script and set permissions
