@@ -1,4 +1,4 @@
-FROM python:3.10.12-slim
+FROM python:3.11-slim
 
 # Declare build arguments with default values
 ARG SUPERSET_HOME
