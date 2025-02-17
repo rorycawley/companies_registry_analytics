@@ -29,21 +29,21 @@ CREATE TABLE directors (
 );
 
 INSERT INTO companies (name, incorporation_date, street_address, city, country_code) VALUES
-('Quantum Innovations Inc.', '2010-06-15', '123 Tech Valley Road', 'Kabul', 'AF'),	-- Company 1
+('Quantum Innovations Inc.', '2010-06-15', '123 Tech Valley Road', 'Kabul', 'AF'),	        -- Company 1
 ('EuroFinance Group Ltd.', '2005-03-22', '456 Bankers Street', 'London', 'GB'),				-- Company 2
-('Berlin AutoWerke GmbH', '2008-09-10', '789 Fahrzeug Straße', 'Berlin', 'DE'),				-- Company 3
+('Berlin AutoWerke GmbH', '2008-09-10', '789 Fahrzeug Straße', 'Kabul', 'AF'),				-- Company 3
 ('Boston Medical Partners LLC', '2012-11-01', '321 Health Avenue', 'Boston', 'US'),			-- Company 4
 ('Maple Energy Corp.', '2007-04-18', '654 Green Road', 'Toronto', 'CA'),					-- Company 5
-('Acme Holdings Ltd', '2013-01-15', '123 Main St', 'Johannesburg', 'ZA'),							-- Company 6
-('Beta Innovations Plc', '2014-05-20', '456 Elm Ave', 'London', 'GB'),						-- Company 7
+('Acme Holdings Ltd', '2013-01-15', '123 Main St', 'Johannesburg', 'ZA'),					-- Company 6
+('Beta Innovations Plc', '2014-05-20', '456 Elm Ave', 'Kabul', 'AF'),						-- Company 7
 ('Gamma Solutions Inc', '2015-09-10', '789 Oak Ln', 'New York', 'US'),						-- Company 8
-('Delta Enterprises GmbH', '2016-03-05', '101 Pine Rd', 'Berlin', 'DE'),					-- Company 9
+('Delta Enterprises GmbH', '2016-03-05', '101 Pine Rd', 'Tripoli', 'LY'),					-- Company 9
 ('Epsilon Ventures SA', '2017-07-25', '202 Maple Dr', 'Paris', 'FR'),						-- Company 10
-('Zeta Group Ltd', '2018-11-18', '303 Willow Ct', 'Dublin', 'IE'),							-- Company 11
-('Eta Technologies Inc', '2019-04-02', '404 Birch Pl', 'San Francisco', 'US'),				-- Company 12
-('Theta Investments Plc', '2020-08-29', '505 Cedar Cir', 'London', 'GB'),					-- Company 13
-('Iota Systems GmbH', '2021-02-14', '606 Redwood Way', 'Munich', 'DE'),						-- Company 14
-('Kappa Industries SA', '2022-06-08', '707 Cherry St', 'Lyon', 'FR');						-- Company 15
+('Zeta Group Ltd', '2018-11-18', '303 Willow Ct', 'Manila', 'PH'),							-- Company 11
+('Eta Technologies Inc', '2019-04-02', '404 Birch Pl', 'Aleppo', 'SY'),				        -- Company 12
+('Theta Investments Plc', '2020-08-29', '505 Cedar Cir', 'Abuja', 'GB'),					-- Company 13
+('Iota Systems GmbH', '2021-02-14', '606 Redwood Way', 'Munich', 'NG'),						-- Company 14
+('Kappa Industries SA', '2022-06-08', '707 Cherry St', 'Donetsk', 'UA');					-- Company 15
 
 
 -- Insert Directors (2 per company with overlaps)
