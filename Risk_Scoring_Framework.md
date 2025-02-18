@@ -1,6 +1,11 @@
 # Executive Summary
 
-- **Three-Pronged Evaluation:** Our framework assesses risk by scoring a company's location (geopolitical risk), financial health (profit margins), and director exposure (presence of politically exposed persons).
+Here's that bullet point broken down into three sub-bullets:
+
+- **Three-Pronged Evaluation:** Our framework assesses risk through:
+  - **Location**: Evaluates geopolitical risk factors in the company's operating regions
+  - **Financial Health**: Analyzes profit margins and overall financial stability
+  - **Director Exposure**: Examines the presence of politically exposed persons in leadership positions
 - **Weighted Composite Score:** Each component is weighted—location (1 point), financial health (2 points), and director risk (3 points)—to yield a single composite score, where a lower score signals lower risk.
 - **Rapid Decision-Making:** This streamlined approach enables quick, data-driven comparisons, helping us prioritize investments and flag high-risk companies for further review.
 
