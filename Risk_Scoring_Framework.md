@@ -1,3 +1,11 @@
+# Executive Summary
+
+- **Three-Pronged Evaluation:** Our framework assesses risk by scoring a company's location (geopolitical risk), financial health (profit margins), and director exposure (presence of politically exposed persons).
+- **Weighted Composite Score:** Each component is weighted—location (1 point), financial health (2 points), and director risk (3 points)—to yield a single composite score, where a lower score signals lower risk.
+- **Rapid Decision-Making:** This streamlined approach enables quick, data-driven comparisons, helping us prioritize investments and flag high-risk companies for further review.
+
+---
+
 # Company Risk Scoring Framework Overview
 
 Our risk framework is designed to quickly assess the overall risk profile of potential investments. By combining three key factors, we generate a composite score that helps identify companies that may require additional scrutiny.
@@ -68,11 +76,11 @@ A lower total score indicates a lower risk profile, while a higher score signals
 
 The table below illustrates how the composite risk score is calculated for three companies:
 
-| Company | Location Risk | Average Profit Margin | Financial Risk Score<br>`(1-Margin)×2` | Director Risk | Total Composite Score |
-|---------|---------------|----------------------|-------------------------------------|---------------|---------------------|
-| **EuroFinance Group Ltd.** | 0 (London, GB is low risk) | ~15% (0.15) | (1 - 0.15)×2 ≈ **1.70** | 0 (No PEPs) | **0 + 1.70 + 0 = 1.70** |
-| **Acme Holdings Ltd** | 1 (Johannesburg, ZA is medium risk) | ~15% (0.15) | (1 - 0.15)×2 ≈ **1.70** | 3 (John Smith is flagged) | **1 + 1.70 + 3 = 5.70** |
-| **Kappa Industries SA** | 2 (Donetsk, UA is high risk) | ~15% (0.15) | (1 - 0.15)×2 ≈ **1.70** | 3 (Isabelle Girard is flagged) | **2 + 1.70 + 3 = 6.70** |
+| Company                      | Location Risk                        | Average Profit Margin | Financial Risk Score<br>`(1-Margin)×2` | Director Risk          | Total Composite Score        |
+|------------------------------|--------------------------------------|-----------------------|----------------------------------------|------------------------|------------------------------|
+| **EuroFinance Group Ltd.**   | 0 (London, GB is low risk)           | ~15% (0.15)           | (1 - 0.15)×2 ≈ **1.70**                | 0 (No PEPs)            | **0 + 1.70 + 0 = 1.70**        |
+| **Acme Holdings Ltd**        | 1 (Johannesburg, ZA is medium risk)  | ~15% (0.15)           | (1 - 0.15)×2 ≈ **1.70**                | 3 (John Smith is flagged) | **1 + 1.70 + 3 = 5.70**        |
+| **Kappa Industries SA**      | 2 (Donetsk, UA is high risk)         | ~15% (0.15)           | (1 - 0.15)×2 ≈ **1.70**                | 3 (Isabelle Girard is flagged) | **2 + 1.70 + 3 = 6.70**        |
 
 ---
 
@@ -93,4 +101,3 @@ The table below illustrates how the composite risk score is calculated for three
   - **Higher scores** highlight companies that warrant closer examination.
 
 This framework is designed to enable rapid, data-driven decision-making. The composite risk score helps us prioritize opportunities and mitigate potential downsides in our investment strategy.
-
